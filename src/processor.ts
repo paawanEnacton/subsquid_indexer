@@ -2,7 +2,8 @@ import { TypeormDatabase } from "@subsquid/typeorm-store";
 import { EvmBatchProcessor } from "@subsquid/evm-processor";
 import { lookupArchive } from "@subsquid/archive-registry";
 import assert from "assert";
-import { Burn } from "./model";
+import { Transfer } from "./model";
+// import { Burn } from "./model";
 
 const processor = new EvmBatchProcessor()
   .setDataSource({
@@ -13,65 +14,47 @@ const processor = new EvmBatchProcessor()
       evmLog: {
         topics: true,
         data: true,
-        // address: true,
-        // index: true,
-        // transactionIndex: true,
       },
-      // transaction: {
-      //   hash: true,
-      //   to: true,
-      //   index: true,
-      // },
-    },
+      transaction: {
+        hash: true,
+      },
+    } as const,
   });
-// .addTransaction([], {
-//   data: {
-//     transaction: {
-//       id: true,
-//       hash: true,
-//       blockNumber: true,
-//       blockHash: true,
-//       from: true,
-//       to: true,
-//       value: true,
-//       gas: true,
-//       gasPrice: true,
-//       nonce: true,
-//       input: true,
-//     },
-//   },
-// });
 
 function formatID(height: any, hash: string) {
   return `${String(height).padStart(10, "0")}-${hash}`;
 }
 
 processor.run(new TypeormDatabase(), async (ctx) => {
+  let transferData: any = [];
+
   for (let c of ctx.blocks) {
-    for (let i of c.items) {
-      ctx.log.info(i, "Next item:");
+    for (let item of c.items) {
+      // console.log("items :>> ", item);
+      if (item.kind === "evmLog") {
+        // console.log({
+        //   id: item.evmLog.id,
+        //   extrinsicHash: item.transaction.hash,
+        //   timestamp: new Date(c.header.timestamp),
+        //   from: item.address,
+        //   to: item.transaction.to,
+        //   blockNumber: item.transaction.index,
+        // });
+
+        transferData.push(
+          new Transfer({
+            id: item.evmLog.id,
+            extrinsicHash: item.transaction.hash,
+            timestamp: new Date(c.header.timestamp),
+            from: item.address,
+            to: item.transaction.to,
+            blockNumber: item.transaction.index,
+            amount: null,
+          })
+        );
+      }
     }
   }
-  // const burns: Burn[] = []
-  // for (let c of ctx.blocks) {
-  //   for (let i of c.items) {
-  //     assert(i.kind == 'transaction')
-  //     // decode and normalize the tx data
-  //     burns.push(new Burn({
-  //       id: formatID(c.header.height, i.transaction.hash),
-  //       block: c.header.height,
-  //       address: i.transaction.from,
-  //       value: i.transaction.value,
-  //       txHash: i.transaction.hash
-  //     }))
-  //   }
-  //  }
-  //  // apply vectorized transformations and aggregations
-  //  const burned = burns.reduce((acc, b) => acc + b.value, 0n)/1_000_000_000n
-  //  const startBlock = ctx.blocks.at(0)?.header.height
-  //  const endBlock = ctx.blocks.at(-1)?.header.height
-  //  ctx.log.info(`Burned ${burned} Gwei from ${startBlock} to ${endBlock}`)
-
-  //  // upsert batches of entities with batch-optimized ctx.store.save
-  //  await ctx.store.save(burns)
+  // console.log("transferData :>> ", transferData);
+  await ctx.store.save(transferData);
 });

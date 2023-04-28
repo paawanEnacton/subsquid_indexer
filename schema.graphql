@@ -1,11 +1,3 @@
-# type Burn @entity {
-#   id: ID!
-#   block: Int!
-#   address: String! @index
-#   value: BigInt!
-#   txHash: String!
-# }
-
 # type Account @entity {
 #   "Account address"
 #   id: ID!
@@ -13,37 +5,12 @@
 #   transfersFrom: [Transfer!] @derivedFrom(field: "from")
 # }
 
-# type Transfer @entity {
-#   id: ID!
-#   blockNumber: Int! @index
-#   timestamp: DateTime! @index
-#   extrinsicHash: String @index
-#   from: Account!
-#   to: Account!
-#   amount: BigInt! @index
-#   fee: BigInt! # fee is calculated at the best effort and may be zero for some old extrinsics
-# }
-
-# type Transfer @entity {
-#   id: ID!
-#   hash: String!
-#   blockNumber: Int
-#   blockHash: String
-#   from: String!
-#   to: String
-#   value: String!
-#   gas: Int!
-#   gasPrice: String!
-#   nonce: Int!
-#   input: String!
-# }
-
-# type Event {
-#   transactionHash: String!
-#   blockNumber: Int!
-#   blockHash: String!
-#   logIndex: Int!
-#   address: String!
-#   data: String
-#   topics: [String!]!
-# }
+type Transfer @entity {
+  id: ID!
+  blockNumber: Int @index
+  timestamp: DateTime! @index
+  extrinsicHash: String @index
+  from: String!
+  to: String
+  amount: BigInt @index
+}
